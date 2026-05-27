@@ -20,7 +20,7 @@ defineEmits<{
   (e: 'copyShareUrl'): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const advancedOpen = ref<string[]>([])
 </script>
 
@@ -28,11 +28,17 @@ const advancedOpen = ref<string[]>([])
   <el-drawer
     :model-value="modelValue"
     :title="t('settings')"
-    direction="rtl"
+    direction="ltr"
     size="380px"
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <el-form label-position="top">
+      <el-form-item :label="t('language')">
+        <el-select v-model="locale" size="large" style="width: 100%">
+          <el-option value="zh" label="中文" />
+          <el-option value="en" label="English" />
+        </el-select>
+      </el-form-item>
       <el-form-item :label="t('endpoint')" required>
         <el-input v-model="form.endpoint" placeholder="https://api.example.com/v1" size="large" />
       </el-form-item>

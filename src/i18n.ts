@@ -2,8 +2,6 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   zh: {
-    appTitle: 'YA-BYOK Chat',
-    appSubtitle: '把配置放在链接里，发给家人即可使用',
     language: '语言',
     endpoint: '接口地址',
     apiKey: 'API Key',
@@ -52,8 +50,6 @@ const messages = {
     repoLink: '在 GitHub 上查看本项目',
   },
   en: {
-    appTitle: 'YA-BYOK Chat',
-    appSubtitle: 'Put config in a link and share it directly',
     language: 'Language',
     endpoint: 'Endpoint',
     apiKey: 'API Key',
