@@ -4,7 +4,7 @@
 
 面向**非技术用户**设计：技术人员配置一次，生成分享链接，收到链接的人打开即可直接聊天，无需填写任何设置。
 
-[在线 Demo](https://blog.laurence042.com/project/yabyokchat/demo/)
+[在线 Demo](https://blog.laurence042.com/project/YA-BYOK-Chat/demo/)
 
 ## 功能
 
