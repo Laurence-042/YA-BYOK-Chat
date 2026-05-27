@@ -33,7 +33,7 @@ const messages = ref<ChatMessage[]>([])
 const MAX_SHARE_URL_LENGTH = 1800
 const shareUrl = computed(() => {
   const payload = encodeConfig(form)
-  const url = new URL(window.location.href)
+  const url = new URL(window.location.origin + window.location.pathname)
   url.searchParams.set('c', payload)
   return url.toString()
 })
@@ -67,7 +67,7 @@ function loadConfigFromUrl() {
   }
   try {
     const decoded = decodeConfig(encoded)
-    if (!decoded.endpoint || !decoded.apiKey || !decoded.model) {
+    if (!isValidShareConfig(decoded)) {
       throw new Error('missing fields')
     }
     form.endpoint = decoded.endpoint
@@ -78,6 +78,22 @@ function loadConfigFromUrl() {
   } catch {
     ElMessage.warning(t('invalidConfig'))
   }
+}
+
+function isValidShareConfig(config: unknown): config is ShareConfig {
+  if (!config || typeof config !== 'object') {
+    return false
+  }
+  const candidate = config as Partial<ShareConfig>
+  return (
+    typeof candidate.endpoint === 'string' &&
+    /^https?:\/\//.test(candidate.endpoint) &&
+    typeof candidate.apiKey === 'string' &&
+    candidate.apiKey.trim().length > 0 &&
+    typeof candidate.model === 'string' &&
+    candidate.model.trim().length > 0 &&
+    (typeof candidate.systemPrompt === 'string' || typeof candidate.systemPrompt === 'undefined')
+  )
 }
 
 async function copyShareUrl() {

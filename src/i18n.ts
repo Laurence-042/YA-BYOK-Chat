@@ -53,8 +53,14 @@ const messages = {
 
 type Locale = keyof typeof messages
 
-const preferredLanguage = (navigator.languages?.[0] ?? navigator.language ?? 'en').toLowerCase()
-const detected = preferredLanguage.startsWith('zh') ? 'zh' : 'en'
+function detectLocale(): Locale {
+  const primary = navigator.languages?.[0]
+  const fallback = navigator.language
+  const source = (primary ?? fallback ?? 'en').toLowerCase()
+  return source.startsWith('zh') ? 'zh' : 'en'
+}
+
+const detected = detectLocale()
 
 export const i18n = createI18n({
   legacy: false,
