@@ -28,6 +28,7 @@ const draftMessage = ref('')
 const loading = ref(false)
 const messages = ref<ChatMessage[]>([])
 
+// Keep below common 2KB URL limits in some environments (proxies/legacy clients).
 const MAX_SHARE_URL_LENGTH = 1800
 const shareUrl = computed(() => {
   const payload = encodeConfig(form)
@@ -41,7 +42,7 @@ const shareTooLong = computed(() => shareUrl.value.length > MAX_SHARE_URL_LENGTH
 function encodeConfig(config: ShareConfig): string {
   const json = JSON.stringify(config)
   const encoded = new TextEncoder().encode(json)
-  const binary = String.fromCodePoint(...encoded)
+  const binary = String.fromCharCode(...encoded)
   return btoa(binary)
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -52,7 +53,7 @@ function decodeConfig(encoded: string): ShareConfig {
   const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/')
   const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4)
   const binary = atob(padded)
-  const bytes = Uint8Array.from(binary, (char) => char.codePointAt(0) ?? 0)
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
   const decoded = new TextDecoder().decode(bytes)
   return JSON.parse(decoded)
 }
