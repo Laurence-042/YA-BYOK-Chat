@@ -2,6 +2,16 @@
 
 Yet Another BYOK Chat: a single-page Vue 3 + TypeScript app that lets users chat with any OpenAI-compatible API endpoint. Config (endpoint, key, model, system prompt) is stored in `localStorage` and can be shared via a URL-encoded `?c=` query parameter.
 
+## Background & Design Intent
+
+**Target user**: non-technical users (e.g. a parent). Existing BYOK chat sites expose concepts like provider selection, temperature, token limits, import/export settings — too much for someone unfamiliar with LLM APIs.
+
+**Core goal**: make it trivially easy for a tech-savvy person to configure the app once and share a single URL that loads the full config automatically. The recipient clicks the link, sees the chat box ready to use — nothing to fill in.
+
+**Deployment**: the app is hosted at a non-root subpath (e.g. `https://blog.laurence042.com/project/yabyokchat/demo/`) via [this GitHub Actions workflow](https://github.com/Laurence-042/Laurence-042.github.io/blob/main/.github/workflows/deploy-projects.yaml). This is why `base: './'` in `vite.config.ts` must never be changed.
+
+**Design philosophy**: keep the UI as simple as a consumer chat app. Resist adding power-user features (temperature sliders, system prompt editor visible by default, model parameters, token counters, etc.) unless explicitly requested. Every new option is a potential point of confusion for the target user.
+
 ## Commands
 
 ```bash
