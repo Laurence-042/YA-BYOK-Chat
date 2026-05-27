@@ -1,43 +1,47 @@
 # YA-BYOK-Chat
 
-Yet Another BYOK Chat（Vue + TS + Element Plus）。
+> Yet Another Bring-Your-Own-Key Chat — a minimal single-page chat app for OpenAI-compatible APIs.
 
-## 特性
+面向**非技术用户**设计：技术人员配置一次，生成分享链接，收到链接的人打开即可直接聊天，无需填写任何设置。
 
-- 简洁配置：Endpoint / API Key / Model / System Prompt / Temperature
-- URL 分享配置：可一键复制分享链接，打开即自动填入配置
-- URL 长度提示：超过安全长度会提示风险
-- 中英文界面（i18n）
-- 适配非根路径部署（Vite `base: './'`）
-- 对话体验：Enter 发送 / Shift+Enter 换行，输入法友好；回复保留换行；等待回复时显示打字指示
-- 长对话自动摘要：超过阈值后将早期消息压缩为摘要，节省上下文（可在设置中关闭）
-- 异常诊断：请求失败时弹出诊断信息对话框，一键复制（已自动隐去 API Key）发送给开发者排查
+[在线 Demo](https://blog.laurence042.com/project/yabyokchat/demo/)
 
-## 开发
+## 功能
+
+- **开箱即用的分享链接** — 配置（Endpoint / API Key / 模型 / 系统提示词等）编码进 URL，一键复制，对方打开即自动填入
+- **兼容所有 OpenAI 格式 API** — 只需填入 Base URL，支持 OpenAI、Azure、本地 Ollama、各类代理等
+- **Markdown & Mermaid 渲染** — 助手回复支持富文本格式和流程图
+- **长对话自动摘要** — 消息超过阈值后自动将早期对话压缩为摘要，节省上下文窗口（可关闭）
+- **异常诊断** — 请求失败时弹出诊断对话框，一键复制（API Key 已脱敏）方便排查
+- **中 / 英文界面切换**
+- **配置本地持久化** — 设置和聊天记录存于 `localStorage`，刷新不丢失
+
+## 技术栈
+
+Vue 3 + TypeScript · Vite · Element Plus · vue-i18n · marked · Mermaid
+
+## 本地开发
 
 ```bash
 npm install
-npm run dev
+npm run dev      # 启动开发服务器
+npm run build    # 类型检查 + 构建产物
+npm run preview  # 预览构建结果
 ```
 
-## 构建
+## 部署说明
 
-```bash
-npm run build
-```
+构建产物为纯静态文件，可托管在任意路径（非根路径同样支持）。`vite.config.ts` 中 `base: './'` 不可修改。
 
 ## 致谢 / Acknowledgements
 
-设置项的能力对标（temperature / max tokens / summarize-after / retain-last-N 等）参考了
-[0xarchit/ByokChat](https://github.com/0xarchit/ByokChat)（MIT License）的设计思路。感谢
-该项目作者将其工作以开源协议开放，让本项目得以在尊重原作的前提下借鉴其交互范式。本仓库与
-该项目无隶属关系；具体实现与代码均为独立编写。
+高级设置项（temperature / max tokens / summarize-after / retain-last-N 等）的交互设计参考了
+[0xarchit/ByokChat](https://github.com/0xarchit/ByokChat)（MIT License）。感谢原作者以开源协议开放其工作。
+本项目与 ByokChat 无隶属关系，所有代码均独立编写。
 
-The advanced settings surface (temperature / max tokens / summarize-after / retain-last-N)
-takes design inspiration from [0xarchit/ByokChat](https://github.com/0xarchit/ByokChat),
-licensed under the MIT License. Thanks to the author for releasing their work under an
-open-source license. This project is not affiliated with ByokChat; all code here is
-independently written.
+The advanced settings panel (temperature / max tokens / summarize-after / retain-last-N)
+takes design inspiration from [0xarchit/ByokChat](https://github.com/0xarchit/ByokChat) (MIT License).
+This project is not affiliated with ByokChat; all code is independently written.
 
 ## License
 
