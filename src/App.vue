@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
@@ -27,6 +27,92 @@ const form = reactive<ShareConfig>({
 const draftMessage = ref('')
 const loading = ref(false)
 const messages = ref<ChatMessage[]>([])
+const drawerOpen = ref(false)
+const availableModels = ref<string[]>([])
+const modelsLoading = ref(false)
+
+let fetchModelsTimer: ReturnType<typeof setTimeout> | null = null
+
+async function fetchModels() {
+  if (!form.endpoint || !form.apiKey) {
+    availableModels.value = []
+    return
+  }
+  const base = form.endpoint.endsWith('/') ? form.endpoint : form.endpoint + '/'
+  modelsLoading.value = true
+  try {
+    const response = await fetch(`${base}models`, {
+      headers: { Authorization: 'Bearer ' + form.apiKey },
+    })
+    if (!response.ok) throw new Error('failed')
+    const data = await response.json()
+    const models: string[] = (data?.data ?? [])
+      .map((m: { id: string }) => m.id)
+      .filter((id: string) => typeof id === 'string')
+      .sort()
+    availableModels.value = models
+    if (!form.model && models.length > 0) {
+      form.model = models[0]
+    }
+  } catch {
+    availableModels.value = []
+  } finally {
+    modelsLoading.value = false
+  }
+}
+
+watch([() => form.endpoint, () => form.apiKey], () => {
+  if (fetchModelsTimer) clearTimeout(fetchModelsTimer)
+  fetchModelsTimer = setTimeout(fetchModels, 600)
+})
+
+const LS_CONFIG_KEY = 'byok-config'
+const LS_MESSAGES_KEY = 'byok-messages'
+
+function saveConfig() {
+  localStorage.setItem(LS_CONFIG_KEY, JSON.stringify({ ...form }))
+}
+
+function loadConfigFromStorage(): boolean {
+  try {
+    const raw = localStorage.getItem(LS_CONFIG_KEY)
+    if (!raw) return false
+    const saved = JSON.parse(raw) as Partial<ShareConfig>
+    if (typeof saved.endpoint === 'string') form.endpoint = saved.endpoint
+    if (typeof saved.apiKey === 'string') form.apiKey = saved.apiKey
+    if (typeof saved.model === 'string') form.model = saved.model
+    if (typeof saved.systemPrompt === 'string') form.systemPrompt = saved.systemPrompt
+    return true
+  } catch {
+    return false
+  }
+}
+
+function saveMessages() {
+  localStorage.setItem(LS_MESSAGES_KEY, JSON.stringify(messages.value))
+}
+
+function loadMessagesFromStorage() {
+  try {
+    const raw = localStorage.getItem(LS_MESSAGES_KEY)
+    if (!raw) return
+    const saved: unknown = JSON.parse(raw)
+    if (Array.isArray(saved)) {
+      messages.value = saved.filter(
+        (m): m is ChatMessage =>
+          m !== null &&
+          typeof m === 'object' &&
+          (m.role === 'user' || m.role === 'assistant') &&
+          typeof m.content === 'string',
+      )
+    }
+  } catch {
+    // ignore corrupt data
+  }
+}
+
+watch(form, saveConfig, { deep: true })
+watch(messages, saveMessages, { deep: true })
 
 // Many environments still enforce ~2KB URL limits (legacy browsers, reverse proxies, email clients).
 // Use 1800 as a safety margin for base URL/query overhead when sharing config links.
@@ -59,12 +145,10 @@ function decodeConfig(encoded: string): ShareConfig {
   return JSON.parse(decoded)
 }
 
-function loadConfigFromUrl() {
+function loadConfigFromUrl(): boolean {
   const url = new URL(window.location.href)
   const encoded = url.searchParams.get('c')
-  if (!encoded) {
-    return
-  }
+  if (!encoded) return false
   try {
     const decoded = decodeConfig(encoded)
     if (!isValidShareConfig(decoded)) {
@@ -75,8 +159,11 @@ function loadConfigFromUrl() {
     form.model = decoded.model
     form.systemPrompt = decoded.systemPrompt || ''
     ElMessage.success(t('configReady'))
+    fetchModels()
+    return true
   } catch {
     ElMessage.warning(t('invalidConfig'))
+    return false
   }
 }
 
@@ -97,6 +184,10 @@ function isValidShareConfig(config: unknown): config is ShareConfig {
 }
 
 async function copyShareUrl() {
+  if (!form.endpoint || !form.apiKey || !form.model) {
+    ElMessage.warning(t('shareConfigIncomplete'))
+    return
+  }
   if (shareTooLong.value) {
     ElMessage.warning(t('shareTooLong'))
   }
@@ -160,7 +251,16 @@ async function sendMessage() {
   }
 }
 
-onMounted(loadConfigFromUrl)
+onMounted(() => {
+  loadMessagesFromStorage()
+  const fromUrl = loadConfigFromUrl()
+  if (!fromUrl) {
+    loadConfigFromStorage()
+    if (form.endpoint && form.apiKey) {
+      fetchModels()
+    }
+  }
+})
 </script>
 
 <template>
@@ -172,37 +272,31 @@ onMounted(loadConfigFromUrl)
             <h1>{{ t('appTitle') }}</h1>
             <p>{{ t('appSubtitle') }}</p>
           </div>
-          <el-select v-model="locale" class="lang-select" size="large">
-            <el-option value="zh" label="中文" />
-            <el-option value="en" label="English" />
-          </el-select>
+          <div class="header-right">
+            <el-select v-model="locale" class="lang-select" size="large">
+              <el-option value="zh" label="中文" />
+              <el-option value="en" label="English" />
+            </el-select>
+            <el-button size="large" @click="drawerOpen = true">{{ t('settings') }}</el-button>
+          </div>
         </div>
       </template>
 
-      <el-form label-position="top" class="config-grid">
-        <el-form-item :label="t('endpoint')" required>
-          <el-input v-model="form.endpoint" placeholder="https://api.example.com/v1" size="large" />
-        </el-form-item>
-        <el-form-item :label="t('apiKey')" required>
-          <el-input v-model="form.apiKey" type="password" show-password size="large" />
-        </el-form-item>
-        <el-form-item :label="t('model')" required>
-          <el-input v-model="form.model" placeholder="claude-3-5-sonnet" size="large" />
-        </el-form-item>
-        <el-form-item :label="`${t('systemPrompt')}（${t('optional')}）`">
-          <el-input v-model="form.systemPrompt" type="textarea" :rows="2" />
-        </el-form-item>
-      </el-form>
-
-      <div class="actions">
-        <el-button type="primary" size="large" @click="copyShareUrl">
-          {{ t('shareConfig') }}
-        </el-button>
+      <div class="model-bar">
+        <el-select
+          v-model="form.model"
+          filterable
+          allow-create
+          default-first-option
+          :loading="modelsLoading"
+          :placeholder="t('modelPlaceholder')"
+          size="large"
+          class="model-select"
+        >
+          <el-option v-for="m in availableModels" :key="m" :label="m" :value="m" />
+        </el-select>
         <el-button size="large" @click="clearChat">{{ t('clearChat') }}</el-button>
       </div>
-      <el-alert v-if="shareTooLong" :title="t('shareTooLong')" type="warning" show-icon :closable="false" />
-
-      <el-divider />
 
       <div class="chat-panel">
         <div v-if="messages.length === 0" class="empty">{{ t('emptyChat') }}</div>
@@ -226,5 +320,32 @@ onMounted(loadConfigFromUrl)
         </el-button>
       </div>
     </el-card>
+
+    <el-drawer v-model="drawerOpen" :title="t('settings')" direction="rtl" size="380px">
+      <el-form label-position="top">
+        <el-form-item :label="t('endpoint')" required>
+          <el-input v-model="form.endpoint" placeholder="https://api.example.com/v1" size="large" />
+        </el-form-item>
+        <el-form-item :label="t('apiKey')" required>
+          <el-input v-model="form.apiKey" type="password" show-password size="large" />
+        </el-form-item>
+        <el-form-item :label="`${t('systemPrompt')}（${t('optional')}）`">
+          <el-input v-model="form.systemPrompt" type="textarea" :rows="4" />
+        </el-form-item>
+      </el-form>
+      <div class="drawer-actions">
+        <el-button type="primary" size="large" @click="copyShareUrl">
+          {{ t('shareConfig') }}
+        </el-button>
+      </div>
+      <el-alert
+        v-if="shareTooLong"
+        :title="t('shareTooLong')"
+        type="warning"
+        show-icon
+        :closable="false"
+        style="margin-top: 12px"
+      />
+    </el-drawer>
   </div>
 </template>

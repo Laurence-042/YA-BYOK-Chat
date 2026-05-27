@@ -42,20 +42,30 @@ body {
   color: #6b7280;
 }
 
+.header-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .lang-select {
   min-width: 120px;
 }
 
-.config-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 16px;
-}
-
-.actions {
+.model-bar {
   display: flex;
   gap: 12px;
+  align-items: center;
   margin-bottom: 12px;
+}
+
+.model-select {
+  flex: 1;
+}
+
+.drawer-actions {
+  margin-top: 8px;
 }
 
 .chat-panel {
@@ -94,10 +104,6 @@ body {
 }
 
 @media (max-width: 900px) {
-  .config-grid {
-    grid-template-columns: 1fr;
-  }
-
   .header {
     flex-direction: column;
   }
@@ -106,7 +112,7 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .actions {
+  .model-bar {
     flex-wrap: wrap;
   }
 }
