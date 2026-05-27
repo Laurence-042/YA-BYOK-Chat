@@ -43,6 +43,13 @@ const messages = {
     diagnosticsCopied: '诊断信息已复制',
     close: '关闭',
     retry: '重试',
+    maxTokens: '最大输出 Tokens',
+    maxTokensHint: '留空则由服务端默认值决定',
+    summarizeAfter: '触发摘要的消息数',
+    summarizeAfterHint: '当消息条数超过该值时，开始压缩较早的对话（建议 10–100）',
+    retainMessages: '摘要后保留的最近消息数',
+    retainMessagesHint: '摘要后仍以原文形式保留的最近条数（建议 4–20）',
+    repoLink: '在 GitHub 上查看本项目',
   },
   en: {
     appTitle: 'YA-BYOK Chat',
@@ -89,6 +96,15 @@ const messages = {
     diagnosticsCopied: 'Diagnostics copied',
     close: 'Close',
     retry: 'Retry',
+    maxTokens: 'Max output tokens',
+    maxTokensHint: 'Leave blank to use the provider default',
+    summarizeAfter: 'Summarize after N messages',
+    summarizeAfterHint:
+      'Start condensing older turns once the chat grows past this size (suggested 10–100).',
+    retainMessages: 'Retain last N messages',
+    retainMessagesHint:
+      'How many recent messages stay verbatim after summarization (suggested 4–20).',
+    repoLink: 'View this project on GitHub',
   },
 }
 

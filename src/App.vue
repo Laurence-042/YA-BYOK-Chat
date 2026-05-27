@@ -14,6 +14,9 @@ type ShareConfig = {
   model: string
   systemPrompt: string
   temperature: string
+  maxTokens: string
+  summarizeAfter: number
+  retainMessages: number
   autoSummary: boolean
 }
 
@@ -37,8 +40,13 @@ const form = reactive<ShareConfig>({
   model: '',
   systemPrompt: '',
   temperature: '',
+  maxTokens: '',
+  summarizeAfter: 20,
+  retainMessages: 6,
   autoSummary: true,
 })
+
+const REPO_URL = 'https://github.com/Laurence-042/YA-BYOK-Chat'
 
 const draftMessage = ref('')
 const loading = ref(false)
@@ -50,14 +58,17 @@ const availableModels = ref<string[]>([])
 const modelsLoading = ref(false)
 const diagnostics = ref<Diagnostics | null>(null)
 const diagnosticsOpen = ref(false)
+const advancedOpen = ref(false)
 const chatPanelRef = ref<HTMLElement | null>(null)
 const isComposing = ref(false)
 
 let fetchModelsTimer: ReturnType<typeof setTimeout> | null = null
 
-// Summary thresholds (kept internal to avoid power-user UI bloat).
-const SUMMARY_TRIGGER_MESSAGES = 20
-const SUMMARY_KEEP_LAST = 6
+// Sensible bounds for the user-tunable advanced fields.
+const SUMMARIZE_AFTER_MIN = 5
+const SUMMARIZE_AFTER_MAX = 200
+const RETAIN_MESSAGES_MIN = 2
+const RETAIN_MESSAGES_MAX = 100
 
 async function fetchModels() {
   if (!form.endpoint || !form.apiKey) {
@@ -100,6 +111,12 @@ function saveConfig() {
   localStorage.setItem(LS_CONFIG_KEY, JSON.stringify({ ...form }))
 }
 
+function clampInt(value: number, min: number, max: number): number {
+  const n = Math.floor(value)
+  if (Number.isNaN(n)) return min
+  return Math.max(min, Math.min(max, n))
+}
+
 function loadConfigFromStorage(): boolean {
   try {
     const raw = localStorage.getItem(LS_CONFIG_KEY)
@@ -110,6 +127,13 @@ function loadConfigFromStorage(): boolean {
     if (typeof saved.model === 'string') form.model = saved.model
     if (typeof saved.systemPrompt === 'string') form.systemPrompt = saved.systemPrompt
     if (typeof saved.temperature === 'string') form.temperature = saved.temperature
+    if (typeof saved.maxTokens === 'string') form.maxTokens = saved.maxTokens
+    if (typeof saved.summarizeAfter === 'number' && Number.isFinite(saved.summarizeAfter)) {
+      form.summarizeAfter = clampInt(saved.summarizeAfter, SUMMARIZE_AFTER_MIN, SUMMARIZE_AFTER_MAX)
+    }
+    if (typeof saved.retainMessages === 'number' && Number.isFinite(saved.retainMessages)) {
+      form.retainMessages = clampInt(saved.retainMessages, RETAIN_MESSAGES_MIN, RETAIN_MESSAGES_MAX)
+    }
     if (typeof saved.autoSummary === 'boolean') form.autoSummary = saved.autoSummary
     return true
   } catch {
@@ -210,6 +234,21 @@ function loadConfigFromUrl(): boolean {
     form.model = decoded.model
     form.systemPrompt = decoded.systemPrompt || ''
     if (typeof decoded.temperature === 'string') form.temperature = decoded.temperature
+    if (typeof decoded.maxTokens === 'string') form.maxTokens = decoded.maxTokens
+    if (typeof decoded.summarizeAfter === 'number' && Number.isFinite(decoded.summarizeAfter)) {
+      form.summarizeAfter = clampInt(
+        decoded.summarizeAfter,
+        SUMMARIZE_AFTER_MIN,
+        SUMMARIZE_AFTER_MAX,
+      )
+    }
+    if (typeof decoded.retainMessages === 'number' && Number.isFinite(decoded.retainMessages)) {
+      form.retainMessages = clampInt(
+        decoded.retainMessages,
+        RETAIN_MESSAGES_MIN,
+        RETAIN_MESSAGES_MAX,
+      )
+    }
     if (typeof decoded.autoSummary === 'boolean') form.autoSummary = decoded.autoSummary
     ElMessage.success(t('configReady'))
     fetchModels()
@@ -234,6 +273,11 @@ function isValidShareConfig(config: unknown): config is ShareConfig {
     candidate.model.trim().length > 0 &&
     (typeof candidate.systemPrompt === 'string' || typeof candidate.systemPrompt === 'undefined') &&
     (typeof candidate.temperature === 'string' || typeof candidate.temperature === 'undefined') &&
+    (typeof candidate.maxTokens === 'string' || typeof candidate.maxTokens === 'undefined') &&
+    (typeof candidate.summarizeAfter === 'number' ||
+      typeof candidate.summarizeAfter === 'undefined') &&
+    (typeof candidate.retainMessages === 'number' ||
+      typeof candidate.retainMessages === 'undefined') &&
     (typeof candidate.autoSummary === 'boolean' || typeof candidate.autoSummary === 'undefined')
   )
 }
@@ -274,6 +318,16 @@ function parsedTemperature(): number | null {
   return value
 }
 
+function parsedMaxTokens(): number | null {
+  const raw = form.maxTokens.trim()
+  if (!raw) return null
+  const value = Number(raw)
+  if (!Number.isFinite(value)) return null
+  const intVal = Math.floor(value)
+  if (intVal < 1) return null
+  return intVal
+}
+
 function buildSystemPrompt(): string {
   const parts: string[] = []
   if (form.systemPrompt.trim()) parts.push(form.systemPrompt.trim())
@@ -293,6 +347,8 @@ function buildRequestBody(extraMessages: ChatMessage[]): Record<string, unknown>
   }
   const temp = parsedTemperature()
   if (temp !== null) body.temperature = temp
+  const maxTok = parsedMaxTokens()
+  if (maxTok !== null) body.max_tokens = maxTok
   return body
 }
 
@@ -404,8 +460,9 @@ async function callChatCompletions(extraMessages: ChatMessage[], stage: string):
 async function maybeSummarize() {
   if (!form.autoSummary) return
   if (summarizing.value) return
-  if (messages.value.length <= SUMMARY_TRIGGER_MESSAGES) return
-  const keep = SUMMARY_KEEP_LAST
+  const threshold = clampInt(form.summarizeAfter, SUMMARIZE_AFTER_MIN, SUMMARIZE_AFTER_MAX)
+  if (messages.value.length <= threshold) return
+  const keep = clampInt(form.retainMessages, RETAIN_MESSAGES_MIN, RETAIN_MESSAGES_MAX)
   const older = messages.value.slice(0, messages.value.length - keep)
   if (older.length === 0) return
   const transcript = older
@@ -432,6 +489,8 @@ async function maybeSummarize() {
     }
     const temp = parsedTemperature()
     if (temp !== null) body.temperature = temp
+    const maxTok = parsedMaxTokens()
+    if (maxTok !== null) body.max_tokens = maxTok
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -517,6 +576,28 @@ onMounted(() => {
               <el-option value="en" label="English" />
             </el-select>
             <el-button size="large" @click="drawerOpen = true">{{ t('settings') }}</el-button>
+            <a
+              :href="REPO_URL"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="repo-link"
+              :title="t('repoLink')"
+              :aria-label="t('repoLink')"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  fill="currentColor"
+                  d="M12 .5A11.5 11.5 0 0 0 .5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.69-3.87-1.54-3.87-1.54-.52-1.32-1.28-1.67-1.28-1.67-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.47.11-3.07 0 0 .97-.31 3.18 1.18a11.04 11.04 0 0 1 5.79 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.6.23 2.78.11 3.07.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.69.41.35.78 1.05.78 2.12 0 1.53-.01 2.76-.01 3.13 0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"
+                />
+              </svg>
+            </a>
           </div>
         </div>
       </template>
@@ -594,20 +675,56 @@ onMounted(() => {
         <el-form-item :label="`${t('systemPrompt')}（${t('optional')}）`">
           <el-input v-model="form.systemPrompt" type="textarea" :rows="4" />
         </el-form-item>
-        <el-form-item :label="`${t('temperature')}（${t('optional')}）`">
-          <el-input
-            v-model="form.temperature"
-            placeholder="0.7"
-            inputmode="decimal"
-            size="large"
-          />
-          <div class="form-hint">{{ t('temperatureHint') }}</div>
-        </el-form-item>
-        <el-form-item :label="t('advanced')">
-          <el-switch v-model="form.autoSummary" />
-          <span class="switch-label">{{ t('autoSummary') }}</span>
-          <div class="form-hint">{{ t('autoSummaryHint') }}</div>
-        </el-form-item>
+
+        <el-collapse v-model="advancedOpen" class="advanced-collapse">
+          <el-collapse-item :title="t('advanced')" name="adv">
+            <el-form-item :label="`${t('temperature')}（${t('optional')}）`">
+              <el-input
+                v-model="form.temperature"
+                placeholder="0.7"
+                inputmode="decimal"
+                size="large"
+              />
+              <div class="form-hint">{{ t('temperatureHint') }}</div>
+            </el-form-item>
+            <el-form-item :label="`${t('maxTokens')}（${t('optional')}）`">
+              <el-input
+                v-model="form.maxTokens"
+                placeholder="2048"
+                inputmode="numeric"
+                size="large"
+              />
+              <div class="form-hint">{{ t('maxTokensHint') }}</div>
+            </el-form-item>
+            <el-form-item>
+              <template #label>
+                <span>{{ t('autoSummary') }}</span>
+              </template>
+              <el-switch v-model="form.autoSummary" />
+              <div class="form-hint">{{ t('autoSummaryHint') }}</div>
+            </el-form-item>
+            <el-form-item :label="t('summarizeAfter')">
+              <el-input-number
+                v-model="form.summarizeAfter"
+                :min="SUMMARIZE_AFTER_MIN"
+                :max="SUMMARIZE_AFTER_MAX"
+                :disabled="!form.autoSummary"
+                size="large"
+              />
+              <div class="form-hint">{{ t('summarizeAfterHint') }}</div>
+            </el-form-item>
+            <el-form-item :label="t('retainMessages')">
+              <el-input-number
+                v-model="form.retainMessages"
+                :min="RETAIN_MESSAGES_MIN"
+                :max="RETAIN_MESSAGES_MAX"
+                :disabled="!form.autoSummary"
+                size="large"
+              />
+              <div class="form-hint">{{ t('retainMessagesHint') }}</div>
+            </el-form-item>
+          </el-collapse-item>
+        </el-collapse>
       </el-form>
       <div class="drawer-actions">
         <el-button type="primary" size="large" @click="copyShareUrl">

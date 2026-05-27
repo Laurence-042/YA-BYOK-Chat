@@ -25,3 +25,20 @@ npm run dev
 ```bash
 npm run build
 ```
+
+## 致谢 / Acknowledgements
+
+设置项的能力对标（temperature / max tokens / summarize-after / retain-last-N 等）参考了
+[0xarchit/ByokChat](https://github.com/0xarchit/ByokChat)（MIT License）的设计思路。感谢
+该项目作者将其工作以开源协议开放，让本项目得以在尊重原作的前提下借鉴其交互范式。本仓库与
+该项目无隶属关系；具体实现与代码均为独立编写。
+
+The advanced settings surface (temperature / max tokens / summarize-after / retain-last-N)
+takes design inspiration from [0xarchit/ByokChat](https://github.com/0xarchit/ByokChat),
+licensed under the MIT License. Thanks to the author for releasing their work under an
+open-source license. This project is not affiliated with ByokChat; all code here is
+independently written.
+
+## License
+
+Released under the terms in [LICENSE](LICENSE).
