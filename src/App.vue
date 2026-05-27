@@ -169,7 +169,7 @@ onMounted(loadConfigFromUrl)
           <el-input v-model="form.apiKey" type="password" show-password size="large" />
         </el-form-item>
         <el-form-item :label="t('model')" required>
-          <el-input v-model="form.model" placeholder="claude-3-7-sonnet" size="large" />
+          <el-input v-model="form.model" placeholder="claude-3-5-sonnet" size="large" />
         </el-form-item>
         <el-form-item :label="`${t('systemPrompt')}（${t('optional')}）`">
           <el-input v-model="form.systemPrompt" type="textarea" :rows="2" />
