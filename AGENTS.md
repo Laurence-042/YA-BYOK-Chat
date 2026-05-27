@@ -24,14 +24,25 @@ No test runner is configured.
 
 ## Architecture
 
-The app is intentionally minimal — nearly all logic lives in two files:
+The app is intentionally small. Logic is split between a thin root component, a few presentational components, and a handful of composables:
 
-| File | Purpose |
+| Path | Purpose |
 |------|---------|
-| [src/App.vue](src/App.vue) | Single root component: all state, UI, API calls, share-link logic |
+| [src/App.vue](src/App.vue) | Root component: wires composables together and renders child components |
+| [src/types.ts](src/types.ts) | Shared types (`ChatMessage`, `ShareConfig`, `Diagnostics`) and tunable bounds |
+| [src/composables/useConfig.ts](src/composables/useConfig.ts) | Reactive `form` config, localStorage persistence, share-URL encode/decode |
+| [src/composables/useModels.ts](src/composables/useModels.ts) | Debounced `GET {base}models` fetch |
+| [src/composables/useChat.ts](src/composables/useChat.ts) | Chat state, `chat/completions` calls, auto-summarization, diagnostics |
+| [src/components/AppHeader.vue](src/components/AppHeader.vue) | Title, locale switcher, settings button, repo link |
+| [src/components/ModelBar.vue](src/components/ModelBar.vue) | Model selector + clear-chat button |
+| [src/components/SummaryBar.vue](src/components/SummaryBar.vue) | Running-summary banner |
+| [src/components/ChatPanel.vue](src/components/ChatPanel.vue) | Message list, typing indicator, auto-scroll |
+| [src/components/ChatComposer.vue](src/components/ChatComposer.vue) | Textarea + send button; owns the draft message |
+| [src/components/SettingsDrawer.vue](src/components/SettingsDrawer.vue) | Endpoint/key/system-prompt/advanced form + share button |
+| [src/components/DiagnosticsDialog.vue](src/components/DiagnosticsDialog.vue) | Failure diagnostics dialog |
 | [src/i18n.ts](src/i18n.ts) | `vue-i18n` setup; all translation strings for `zh` and `en` |
 
-There is no router, no Pinia/Vuex, and no component split — keep it that way unless the user explicitly asks.
+There is no router and no Pinia/Vuex — shared state lives in the composables. Keep the component graph shallow; only split further when a piece of UI is genuinely reused or has grown unwieldy.
 
 ## Key Conventions
 
