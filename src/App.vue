@@ -28,7 +28,8 @@ const draftMessage = ref('')
 const loading = ref(false)
 const messages = ref<ChatMessage[]>([])
 
-// Keep below common 2KB URL limits in some environments (proxies/legacy clients).
+// Many environments still enforce ~2KB URL limits (legacy browsers, reverse proxies, email clients).
+// Use 1800 as a safety margin for base URL/query overhead when sharing config links.
 const MAX_SHARE_URL_LENGTH = 1800
 const shareUrl = computed(() => {
   const payload = encodeConfig(form)
