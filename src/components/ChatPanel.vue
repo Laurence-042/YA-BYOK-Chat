@@ -7,6 +7,7 @@ const props = defineProps<{
   messages: ChatMessage[]
   loading: boolean
   summarizing: boolean
+  streamingContent: string
 }>()
 
 const { t } = useI18n()
@@ -20,7 +21,7 @@ function scrollToBottom() {
 }
 
 watch(
-  () => [props.messages, props.loading, props.summarizing] as const,
+  () => [props.messages, props.loading, props.summarizing, props.streamingContent] as const,
   () => scrollToBottom(),
   { deep: true },
 )
@@ -42,12 +43,16 @@ defineExpose({ scrollToBottom })
       </div>
       <div class="message-content">{{ item.content }}</div>
     </div>
-    <div v-if="loading" class="message assistant typing">
+    <div v-if="loading && !streamingContent" class="message assistant typing">
       <div class="message-role">{{ t('assistant') }}</div>
       <div class="message-content">
         <span class="typing-dots"><i></i><i></i><i></i></span>
         <span class="typing-text">{{ t('typing') }}</span>
       </div>
+    </div>
+    <div v-if="streamingContent" class="message assistant">
+      <div class="message-role">{{ t('assistant') }}</div>
+      <div class="message-content">{{ streamingContent }}</div>
     </div>
     <div v-if="summarizing" class="summarizing-hint">{{ t('summarizing') }}</div>
   </div>

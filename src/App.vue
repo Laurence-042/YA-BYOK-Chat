@@ -18,6 +18,7 @@ const {
   summary,
   loading,
   summarizing,
+  streamingContent,
   diagnostics,
   diagnosticsOpen,
   sendMessage,
@@ -68,6 +69,7 @@ onMounted(() => {
         :messages="messages"
         :loading="loading"
         :summarizing="summarizing"
+        :streaming-content="streamingContent"
       />
 
       <ChatComposer :loading="loading" @send="sendMessage" />

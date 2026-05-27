@@ -22,6 +22,7 @@ export function useChat(form: ShareConfig) {
   const summary = ref('')
   const loading = ref(false)
   const summarizing = ref(false)
+  const streamingContent = ref('')
   const diagnostics = ref<Diagnostics | null>(null)
   const diagnosticsOpen = ref(false)
 
@@ -224,6 +225,88 @@ export function useChat(form: ShareConfig) {
     return content
   }
 
+  async function streamChatCompletions(
+    extraMessages: ChatMessage[],
+    stage: string,
+    onChunk: (delta: string) => void,
+  ): Promise<string> {
+    const endpoint = chatCompletionsUrl()
+    const body = { ...buildRequestBody(extraMessages), stream: true }
+    let response: Response
+    try {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + form.apiKey,
+        },
+        body: JSON.stringify(body),
+      })
+    } catch (err) {
+      recordDiagnostics({
+        stage,
+        errorMessage: err instanceof Error ? err.message : String(err),
+      })
+      throw err
+    }
+    if (!response.ok) {
+      let bodyText = ''
+      try {
+        bodyText = await response.text()
+      } catch {
+        // ignore
+      }
+      recordDiagnostics({
+        stage,
+        status: response.status,
+        statusText: response.statusText,
+        bodyExcerpt: redactBody(bodyText),
+      })
+      throw new Error(`HTTP ${response.status}`)
+    }
+    const reader = response.body?.getReader()
+    if (!reader) {
+      recordDiagnostics({ stage, errorMessage: 'no response body' })
+      throw new Error('no response body')
+    }
+    const decoder = new TextDecoder()
+    let fullContent = ''
+    let buffer = ''
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed || trimmed === 'data: [DONE]') continue
+          if (!trimmed.startsWith('data: ')) continue
+          try {
+            const json = JSON.parse(trimmed.slice(6)) as {
+              choices?: Array<{ delta?: { content?: unknown } }>
+            }
+            const delta = json?.choices?.[0]?.delta?.content
+            if (typeof delta === 'string' && delta) {
+              fullContent += delta
+              onChunk(delta)
+            }
+          } catch {
+            // ignore malformed SSE lines
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock()
+    }
+    if (!fullContent) {
+      recordDiagnostics({ stage, errorMessage: 'empty streaming response' })
+      throw new Error('empty response')
+    }
+    return fullContent
+  }
+
   async function maybeSummarize() {
     if (!form.autoSummary) return
     if (summarizing.value) return
@@ -292,12 +375,21 @@ export function useChat(form: ShareConfig) {
     messages.value.push({ role: 'user', content })
 
     loading.value = true
+    streamingContent.value = ''
     try {
-      const assistantContent = await callChatCompletions(messages.value, 'chat')
+      const assistantContent = await streamChatCompletions(
+        messages.value,
+        'chat',
+        (delta) => {
+          streamingContent.value += delta
+        },
+      )
       messages.value.push({ role: 'assistant', content: assistantContent })
+      streamingContent.value = ''
       // Fire-and-forget summarization once chat grows large.
       void maybeSummarize()
     } catch {
+      streamingContent.value = ''
       diagnosticsOpen.value = true
       ElMessage.error(t('requestFailed'))
     } finally {
@@ -315,6 +407,7 @@ export function useChat(form: ShareConfig) {
     summary,
     loading,
     summarizing,
+    streamingContent,
     diagnostics,
     diagnosticsOpen,
     sendMessage,
