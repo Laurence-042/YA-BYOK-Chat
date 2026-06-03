@@ -48,6 +48,12 @@ const messages = {
     retainMessages: '摘要后保留的最近消息数',
     retainMessagesHint: '摘要后仍以原文形式保留的最近条数（建议 4–20）',
     repoLink: '在 GitHub 上查看本项目',
+    llmConfig: 'LLM 配置',
+    cfWorkerKV: 'Cloudflare Worker KV 日志',
+    cfWorkerUrl: 'Worker 地址',
+    cfWorkerUrlHint: '每次对话完成后，实际收发的消息会以 POST 请求发送至此地址记录',
+    cfWorkerToken: 'Worker 令牌',
+    cfWorkerTokenHint: '可选。若 Worker 需要鉴权，将以 Bearer Token 方式发送',
   },
   en: {
     language: 'Language',
@@ -101,6 +107,12 @@ const messages = {
     retainMessagesHint:
       'How many recent messages stay verbatim after summarization (suggested 4–20).',
     repoLink: 'View this project on GitHub',
+    llmConfig: 'LLM Configuration',
+    cfWorkerKV: 'Cloudflare Worker KV Logging',
+    cfWorkerUrl: 'Worker URL',
+    cfWorkerUrlHint: 'After each exchange, the actual messages are POSTed to this URL for logging',
+    cfWorkerToken: 'Worker Token',
+    cfWorkerTokenHint: 'Optional. Sent as a Bearer token if the Worker requires authentication',
   },
 }
 

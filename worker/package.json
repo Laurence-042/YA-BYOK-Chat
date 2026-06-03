@@ -1,0 +1,15 @@
+{
+  "name": "ya-byok-chat-worker",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250525.0",
+    "typescript": "~6.0.2",
+    "wrangler": "^4.0.0"
+  }
+}

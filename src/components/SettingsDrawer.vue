@@ -22,6 +22,7 @@ defineEmits<{
 
 const { t, locale } = useI18n()
 const advancedOpen = ref<string[]>([])
+const sectionsOpen = ref<string[]>(['llm'])
 </script>
 
 <template>
@@ -39,62 +40,82 @@ const advancedOpen = ref<string[]>([])
           <el-option value="en" label="English" />
         </el-select>
       </el-form-item>
-      <el-form-item :label="t('endpoint')" required>
-        <el-input v-model="form.endpoint" placeholder="https://api.example.com/v1" size="large" />
-      </el-form-item>
-      <el-form-item :label="t('apiKey')" required>
-        <el-input v-model="form.apiKey" type="password" show-password size="large" />
-      </el-form-item>
-      <el-form-item :label="`${t('systemPrompt')}（${t('optional')}）`">
-        <el-input v-model="form.systemPrompt" type="textarea" :rows="4" />
-      </el-form-item>
 
-      <el-collapse v-model="advancedOpen" class="advanced-collapse">
-        <el-collapse-item :title="t('advanced')" name="adv">
-          <el-form-item :label="`${t('temperature')}（${t('optional')}）`">
+      <el-collapse v-model="sectionsOpen" class="sections-collapse">
+        <el-collapse-item :title="t('llmConfig')" name="llm">
+          <el-form-item :label="t('endpoint')" required>
+            <el-input v-model="form.endpoint" placeholder="https://api.example.com/v1" size="large" />
+          </el-form-item>
+          <el-form-item :label="t('apiKey')" required>
+            <el-input v-model="form.apiKey" type="password" show-password size="large" />
+          </el-form-item>
+          <el-form-item :label="`${t('systemPrompt')}（${t('optional')}）`">
+            <el-input v-model="form.systemPrompt" type="textarea" :rows="4" />
+          </el-form-item>
+
+          <el-collapse v-model="advancedOpen" class="advanced-collapse">
+            <el-collapse-item :title="t('advanced')" name="adv">
+              <el-form-item :label="`${t('temperature')}（${t('optional')}）`">
+                <el-input
+                  v-model="form.temperature"
+                  placeholder="0.7"
+                  inputmode="decimal"
+                  size="large"
+                />
+                <div class="form-hint">{{ t('temperatureHint') }}</div>
+              </el-form-item>
+              <el-form-item :label="`${t('maxTokens')}（${t('optional')}）`">
+                <el-input
+                  v-model="form.maxTokens"
+                  placeholder="2048"
+                  inputmode="numeric"
+                  size="large"
+                />
+                <div class="form-hint">{{ t('maxTokensHint') }}</div>
+              </el-form-item>
+              <el-form-item>
+                <template #label>
+                  <span>{{ t('autoSummary') }}</span>
+                </template>
+                <el-switch v-model="form.autoSummary" />
+                <div class="form-hint">{{ t('autoSummaryHint') }}</div>
+              </el-form-item>
+              <el-form-item :label="t('summarizeAfter')">
+                <el-input-number
+                  v-model="form.summarizeAfter"
+                  :min="SUMMARIZE_AFTER_MIN"
+                  :max="SUMMARIZE_AFTER_MAX"
+                  :disabled="!form.autoSummary"
+                  size="large"
+                />
+                <div class="form-hint">{{ t('summarizeAfterHint') }}</div>
+              </el-form-item>
+              <el-form-item :label="t('retainMessages')">
+                <el-input-number
+                  v-model="form.retainMessages"
+                  :min="RETAIN_MESSAGES_MIN"
+                  :max="RETAIN_MESSAGES_MAX"
+                  :disabled="!form.autoSummary"
+                  size="large"
+                />
+                <div class="form-hint">{{ t('retainMessagesHint') }}</div>
+              </el-form-item>
+            </el-collapse-item>
+          </el-collapse>
+        </el-collapse-item>
+
+        <el-collapse-item :title="t('cfWorkerKV')" name="cf">
+          <el-form-item :label="`${t('cfWorkerUrl')}（${t('optional')}）`">
             <el-input
-              v-model="form.temperature"
-              placeholder="0.7"
-              inputmode="decimal"
+              v-model="form.cfWorkerUrl"
+              placeholder="https://your-worker.workers.dev/log"
               size="large"
             />
-            <div class="form-hint">{{ t('temperatureHint') }}</div>
+            <div class="form-hint">{{ t('cfWorkerUrlHint') }}</div>
           </el-form-item>
-          <el-form-item :label="`${t('maxTokens')}（${t('optional')}）`">
-            <el-input
-              v-model="form.maxTokens"
-              placeholder="2048"
-              inputmode="numeric"
-              size="large"
-            />
-            <div class="form-hint">{{ t('maxTokensHint') }}</div>
-          </el-form-item>
-          <el-form-item>
-            <template #label>
-              <span>{{ t('autoSummary') }}</span>
-            </template>
-            <el-switch v-model="form.autoSummary" />
-            <div class="form-hint">{{ t('autoSummaryHint') }}</div>
-          </el-form-item>
-          <el-form-item :label="t('summarizeAfter')">
-            <el-input-number
-              v-model="form.summarizeAfter"
-              :min="SUMMARIZE_AFTER_MIN"
-              :max="SUMMARIZE_AFTER_MAX"
-              :disabled="!form.autoSummary"
-              size="large"
-            />
-            <div class="form-hint">{{ t('summarizeAfterHint') }}</div>
-          </el-form-item>
-          <el-form-item :label="t('retainMessages')">
-            <el-input-number
-              v-model="form.retainMessages"
-              :min="RETAIN_MESSAGES_MIN"
-              :max="RETAIN_MESSAGES_MAX"
-              :disabled="!form.autoSummary"
-              size="large"
-            />
-            <div class="form-hint">{{ t('retainMessagesHint') }}</div>
+          <el-form-item :label="`${t('cfWorkerToken')}（${t('optional')}）`">
+            <el-input v-model="form.cfWorkerToken" type="password" show-password size="large" />
+            <div class="form-hint">{{ t('cfWorkerTokenHint') }}</div>
           </el-form-item>
         </el-collapse-item>
       </el-collapse>

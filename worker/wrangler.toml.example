@@ -1,0 +1,18 @@
+name = "ya-byok-chat-logger"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# KV namespace binding.
+# 1. Run: wrangler kv namespace create YA_BYOK_Chat_LOG
+# 2. Paste the returned id below.
+# 3. For local dev, also run: wrangler kv namespace create YA_BYOK_Chat_LOG --preview
+#    and paste that id in preview_id.
+[[kv_namespaces]]
+binding = "YA_BYOK_Chat_LOG"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+# preview_id = "REPLACE_WITH_YOUR_PREVIEW_KV_NAMESPACE_ID"
+
+# Optional: secret token for auth.
+# Set via: wrangler secret put TOKEN
+# [vars]
+# TOKEN = ""

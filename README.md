@@ -4,7 +4,7 @@
 
 面向**非技术用户**设计：技术人员配置一次，生成分享链接，收到链接的人打开即可直接聊天，无需填写任何设置。
 
-[在线 Demo](https://blog.laurence042.com/project/YA-BYOK-Chat/demo/)
+[在线 Demo](https://blog.laurence042.com/project/ya-byok-chat/demo/)
 
 ## 功能
 
@@ -15,6 +15,7 @@
 - **异常诊断** — 请求失败时弹出诊断对话框，一键复制（API Key 已脱敏）方便排查
 - **中 / 英文界面切换**
 - **配置本地持久化** — 设置和聊天记录存于 `localStorage`，刷新不丢失
+- **Cloudflare Worker KV 日志（可选）** — 在设置中填入 Worker 地址后，每轮对话结束时自动将收发消息 POST 至 Cloudflare Worker 写入 KV 存储；Worker 地址和鉴权 token 同样可通过分享链接传递
 
 ## 技术栈
 
@@ -32,6 +33,42 @@ npm run preview  # 预览构建结果
 ## 部署说明
 
 构建产物为纯静态文件，可托管在任意路径（非根路径同样支持）。`vite.config.ts` 中 `base: './'` 不可修改。
+
+## Cloudflare Worker KV 日志（可选）
+
+`worker/` 子目录包含一个 Cloudflare Worker，用于将聊天记录写入 KV 存储。
+
+### 首次部署
+
+```bash
+cd worker
+npm install
+
+# 登录 Cloudflare（首次需要）
+npx wrangler login
+
+# 创建 KV namespace，记录返回的 id
+npx wrangler kv namespace create YA_BYOK_Chat_LOG
+
+# 将上面返回的 id 填入 wrangler.toml 中的 id 字段
+# （本地调试还需创建 preview namespace 并填入 preview_id）
+npx wrangler kv namespace create YA_BYOK_Chat_LOG --preview
+
+# 如需 Token 鉴权，设置 secret（部署后在 Cloudflare Dashboard 也可设置）
+npx wrangler secret put TOKEN
+
+# 部署
+npm run deploy
+```
+
+部署成功后，将 Worker 地址填入设置面板的「Cloudflare Worker KV 日志 → Worker 地址」，即可在每次对话后自动上报消息。
+
+### 本地调试
+
+```bash
+cd worker
+npm run dev
+```
 
 ## 致谢 / Acknowledgements
 

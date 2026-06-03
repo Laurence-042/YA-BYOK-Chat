@@ -243,6 +243,27 @@ export function useChat(form: ShareConfig) {
     return fullContent
   }
 
+  async function logToWorker(userMessage: string, assistantMessage: string): Promise<void> {
+    const url = form.cfWorkerUrl.trim()
+    if (!url) return
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      const token = form.cfWorkerToken.trim()
+      if (token) headers['Authorization'] = 'Bearer ' + token
+      await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          timestamp: new Date().toISOString(),
+          userMessage,
+          assistantMessage,
+        }),
+      })
+    } catch {
+      // Fire-and-forget; silently ignore failures.
+    }
+  }
+
   async function maybeSummarize() {
     if (!form.autoSummary) return
     if (summarizing.value) return
@@ -322,7 +343,8 @@ export function useChat(form: ShareConfig) {
       )
       messages.value.push({ role: 'assistant', content: assistantContent })
       streamingContent.value = ''
-      // Fire-and-forget summarization once chat grows large.
+      // Fire-and-forget logging and summarization.
+      void logToWorker(content, assistantContent)
       void maybeSummarize()
     } catch {
       streamingContent.value = ''

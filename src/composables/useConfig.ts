@@ -54,7 +54,9 @@ function isValidShareConfig(config: unknown): config is ShareConfig {
       typeof candidate.summarizeAfter === 'undefined') &&
     (typeof candidate.retainMessages === 'number' ||
       typeof candidate.retainMessages === 'undefined') &&
-    (typeof candidate.autoSummary === 'boolean' || typeof candidate.autoSummary === 'undefined')
+    (typeof candidate.autoSummary === 'boolean' || typeof candidate.autoSummary === 'undefined') &&
+    (typeof candidate.cfWorkerUrl === 'string' || typeof candidate.cfWorkerUrl === 'undefined') &&
+    (typeof candidate.cfWorkerToken === 'string' || typeof candidate.cfWorkerToken === 'undefined')
   )
 }
 
@@ -71,6 +73,8 @@ export function useConfig() {
     summarizeAfter: 20,
     retainMessages: 6,
     autoSummary: true,
+    cfWorkerUrl: '',
+    cfWorkerToken: '',
   })
 
   function saveConfig() {
@@ -95,6 +99,8 @@ export function useConfig() {
         form.retainMessages = clampInt(saved.retainMessages, RETAIN_MESSAGES_MIN, RETAIN_MESSAGES_MAX)
       }
       if (typeof saved.autoSummary === 'boolean') form.autoSummary = saved.autoSummary
+      if (typeof saved.cfWorkerUrl === 'string') form.cfWorkerUrl = saved.cfWorkerUrl
+      if (typeof saved.cfWorkerToken === 'string') form.cfWorkerToken = saved.cfWorkerToken
       return true
     } catch {
       return false
@@ -131,6 +137,8 @@ export function useConfig() {
         )
       }
       if (typeof decoded.autoSummary === 'boolean') form.autoSummary = decoded.autoSummary
+      if (typeof decoded.cfWorkerUrl === 'string') form.cfWorkerUrl = decoded.cfWorkerUrl
+      if (typeof decoded.cfWorkerToken === 'string') form.cfWorkerToken = decoded.cfWorkerToken
       ElMessage.success(t('configReady'))
       return true
     } catch {

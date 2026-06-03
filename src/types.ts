@@ -13,6 +13,8 @@ export type ShareConfig = {
   summarizeAfter: number
   retainMessages: number
   autoSummary: boolean
+  cfWorkerUrl: string
+  cfWorkerToken: string
 }
 
 export type Diagnostics = {

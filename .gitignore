@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Worker — contains real KV namespace IDs; keep out of version control
+worker/wrangler.toml
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
