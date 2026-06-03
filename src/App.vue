@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, toRef } from 'vue'
 import AppHeader from './components/AppHeader.vue'
 import ModelBar from './components/ModelBar.vue'
 import SummaryBar from './components/SummaryBar.vue'
@@ -10,6 +10,7 @@ import DiagnosticsDialog from './components/DiagnosticsDialog.vue'
 import { useConfig } from './composables/useConfig'
 import { useModels } from './composables/useModels'
 import { useChat } from './composables/useChat'
+import { useTimeAlert } from './composables/useTimeAlert'
 
 const { form, shareTooLong, copyShareUrl, loadConfigFromStorage, loadConfigFromUrl } = useConfig()
 const { availableModels, modelsLoading, fetchModels } = useModels(form)
@@ -31,6 +32,9 @@ const {
 
 const drawerOpen = ref(false)
 const chatPanelRef = ref<InstanceType<typeof ChatPanel> | null>(null)
+const alertDismissed = ref(false)
+
+const { active: alertActive } = useTimeAlert(toRef(form, 'alertStart'), toRef(form, 'alertEnd'))
 
 onMounted(() => {
   loadMessagesFromStorage()
@@ -63,6 +67,15 @@ onMounted(() => {
       />
 
       <SummaryBar :summary="summary" />
+
+      <el-alert
+        v-if="alertActive && form.alertMessage && !alertDismissed"
+        :title="form.alertMessage"
+        type="warning"
+        show-icon
+        @close="alertDismissed = true"
+        style="margin-bottom: 8px"
+      />
 
       <ChatPanel
         ref="chatPanelRef"

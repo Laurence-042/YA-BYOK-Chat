@@ -54,6 +54,13 @@ const messages = {
     cfWorkerUrlHint: '每次对话完成后，实际收发的消息会以 POST 请求发送至此地址记录',
     cfWorkerToken: 'Worker 令牌',
     cfWorkerTokenHint: '可选。若 Worker 需要鉴权，将以 Bearer Token 方式发送',
+    timeAlert: '时段提示',
+    alertMessage: '提示内容',
+    alertMessagePlaceholder: '例如：注意休息，保护眼睛',
+    alertMessageHint: '留空则禁用时段提示',
+    alertStartTime: '开始时间',
+    alertEndTime: '结束时间',
+    alertTimeHint: '格式 HH:MM（24 小时制）。若开始时间晚于结束时间，则视为跨日',
   },
   en: {
     language: 'Language',
@@ -113,6 +120,13 @@ const messages = {
     cfWorkerUrlHint: 'After each exchange, the actual messages are POSTed to this URL for logging',
     cfWorkerToken: 'Worker Token',
     cfWorkerTokenHint: 'Optional. Sent as a Bearer token if the Worker requires authentication',
+    timeAlert: 'Timed Alert',
+    alertMessage: 'Alert message',
+    alertMessagePlaceholder: 'e.g. Time for a break!',
+    alertMessageHint: 'Leave blank to disable the timed alert',
+    alertStartTime: 'Start time',
+    alertEndTime: 'End time',
+    alertTimeHint: 'Format HH:MM (24-hour). If start is after end, the range wraps past midnight.',
   },
 }
 

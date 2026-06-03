@@ -118,6 +118,24 @@ const sectionsOpen = ref<string[]>(['llm'])
             <div class="form-hint">{{ t('cfWorkerTokenHint') }}</div>
           </el-form-item>
         </el-collapse-item>
+
+        <el-collapse-item :title="t('timeAlert')" name="alert">
+          <el-form-item :label="t('alertMessage')">
+            <el-input
+              v-model="form.alertMessage"
+              :placeholder="t('alertMessagePlaceholder')"
+              size="large"
+            />
+            <div class="form-hint">{{ t('alertMessageHint') }}</div>
+          </el-form-item>
+          <el-form-item :label="t('alertStartTime')">
+            <el-input v-model="form.alertStart" placeholder="22:00" size="large" />
+          </el-form-item>
+          <el-form-item :label="t('alertEndTime')">
+            <el-input v-model="form.alertEnd" placeholder="08:00" size="large" />
+            <div class="form-hint">{{ t('alertTimeHint') }}</div>
+          </el-form-item>
+        </el-collapse-item>
       </el-collapse>
     </el-form>
     <div class="drawer-actions">

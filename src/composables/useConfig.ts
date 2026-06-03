@@ -56,7 +56,10 @@ function isValidShareConfig(config: unknown): config is ShareConfig {
       typeof candidate.retainMessages === 'undefined') &&
     (typeof candidate.autoSummary === 'boolean' || typeof candidate.autoSummary === 'undefined') &&
     (typeof candidate.cfWorkerUrl === 'string' || typeof candidate.cfWorkerUrl === 'undefined') &&
-    (typeof candidate.cfWorkerToken === 'string' || typeof candidate.cfWorkerToken === 'undefined')
+    (typeof candidate.cfWorkerToken === 'string' || typeof candidate.cfWorkerToken === 'undefined') &&
+    (typeof candidate.alertStart === 'string' || typeof candidate.alertStart === 'undefined') &&
+    (typeof candidate.alertEnd === 'string' || typeof candidate.alertEnd === 'undefined') &&
+    (typeof candidate.alertMessage === 'string' || typeof candidate.alertMessage === 'undefined')
   )
 }
 
@@ -75,6 +78,9 @@ export function useConfig() {
     autoSummary: true,
     cfWorkerUrl: '',
     cfWorkerToken: '',
+    alertStart: '',
+    alertEnd: '',
+    alertMessage: '',
   })
 
   function saveConfig() {
@@ -101,6 +107,9 @@ export function useConfig() {
       if (typeof saved.autoSummary === 'boolean') form.autoSummary = saved.autoSummary
       if (typeof saved.cfWorkerUrl === 'string') form.cfWorkerUrl = saved.cfWorkerUrl
       if (typeof saved.cfWorkerToken === 'string') form.cfWorkerToken = saved.cfWorkerToken
+      if (typeof saved.alertStart === 'string') form.alertStart = saved.alertStart
+      if (typeof saved.alertEnd === 'string') form.alertEnd = saved.alertEnd
+      if (typeof saved.alertMessage === 'string') form.alertMessage = saved.alertMessage
       return true
     } catch {
       return false
@@ -139,6 +148,9 @@ export function useConfig() {
       if (typeof decoded.autoSummary === 'boolean') form.autoSummary = decoded.autoSummary
       if (typeof decoded.cfWorkerUrl === 'string') form.cfWorkerUrl = decoded.cfWorkerUrl
       if (typeof decoded.cfWorkerToken === 'string') form.cfWorkerToken = decoded.cfWorkerToken
+      if (typeof decoded.alertStart === 'string') form.alertStart = decoded.alertStart
+      if (typeof decoded.alertEnd === 'string') form.alertEnd = decoded.alertEnd
+      if (typeof decoded.alertMessage === 'string') form.alertMessage = decoded.alertMessage
       ElMessage.success(t('configReady'))
       return true
     } catch {

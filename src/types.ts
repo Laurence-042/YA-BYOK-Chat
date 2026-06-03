@@ -15,6 +15,9 @@ export type ShareConfig = {
   autoSummary: boolean
   cfWorkerUrl: string
   cfWorkerToken: string
+  alertStart: string
+  alertEnd: string
+  alertMessage: string
 }
 
 export type Diagnostics = {
