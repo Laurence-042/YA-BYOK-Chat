@@ -83,10 +83,27 @@ const props = defineProps<{
 const { t } = useI18n()
 const chatPanelRef = ref<HTMLElement | null>(null)
 
+/** Tolerance (px) for considering the user "at the bottom". */
+const BOTTOM_THRESHOLD = 24
+/** Whether the user is currently scrolled to (near) the bottom of the panel. */
+const isAtBottom = ref(true)
+
+function isScrolledToBottom(): boolean {
+  const el = chatPanelRef.value
+  if (!el) return true
+  return el.scrollHeight - el.scrollTop - el.clientHeight <= BOTTOM_THRESHOLD
+}
+
+function onScroll() {
+  isAtBottom.value = isScrolledToBottom()
+}
+
 function scrollToBottom() {
   nextTick(() => {
     const el = chatPanelRef.value
-    if (el) el.scrollTop = el.scrollHeight
+    if (!el) return
+    el.scrollTop = el.scrollHeight
+    isAtBottom.value = true
   })
 }
 
@@ -124,7 +141,10 @@ async function renderMermaidBlocks() {
 watch(
   () => [props.messages, props.loading, props.summarizing, props.streamingContent] as const,
   () => {
-    scrollToBottom()
+    // Only auto-follow new content when the user is already at the bottom.
+    // If they have scrolled up, leave their view in place so they can read at
+    // their own pace.
+    if (isAtBottom.value) scrollToBottom()
     void renderMermaidBlocks()
   },
   { deep: true },
@@ -134,7 +154,7 @@ defineExpose({ scrollToBottom })
 </script>
 
 <template>
-  <div ref="chatPanelRef" class="chat-panel">
+  <div ref="chatPanelRef" class="chat-panel" @scroll.passive="onScroll">
     <div v-if="messages.length === 0 && !loading && !streamingContent" class="empty">{{ t('emptyChat') }}</div>
     <div
       v-for="(item, index) in messages"
