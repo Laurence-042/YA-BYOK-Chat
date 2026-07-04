@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref, toRef } from 'vue'
+import { nextTick, onMounted, ref, toRef } from 'vue'
+import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import AppHeader from './components/AppHeader.vue'
 import ModelBar from './components/ModelBar.vue'
 import SummaryBar from './components/SummaryBar.vue'
@@ -12,6 +14,7 @@ import { useModels } from './composables/useModels'
 import { useChat } from './composables/useChat'
 import { useTimeAlert } from './composables/useTimeAlert'
 
+const { t } = useI18n()
 const { form, shareTooLong, copyShareUrl, loadConfigFromStorage, loadConfigFromUrl } = useConfig()
 const { availableModels, modelsLoading, fetchModels } = useModels(form)
 const {
@@ -23,6 +26,7 @@ const {
   diagnostics,
   diagnosticsOpen,
   sendMessage,
+  editAndResend,
   clearChat,
   copyDiagnostics,
   formatDiagnostics,
@@ -35,6 +39,29 @@ const chatPanelRef = ref<InstanceType<typeof ChatPanel> | null>(null)
 const alertDismissed = ref(false)
 
 const { active: alertActive } = useTimeAlert(toRef(form, 'alertStart'), toRef(form, 'alertEnd'))
+
+async function exportScreenshot() {
+  const panelEl = chatPanelRef.value?.$el as HTMLElement | undefined
+  if (!panelEl) return
+  const origMaxHeight = panelEl.style.maxHeight
+  const origOverflow = panelEl.style.overflow
+  panelEl.style.maxHeight = 'none'
+  panelEl.style.overflow = 'visible'
+  await nextTick()
+  try {
+    const { default: html2canvas } = await import('html2canvas')
+    const canvas = await html2canvas(panelEl, { useCORS: true, logging: false })
+    const link = document.createElement('a')
+    link.download = `chat-export-${new Date().toISOString().slice(0, 10)}.png`
+    link.href = canvas.toDataURL('image/png')
+    link.click()
+  } catch {
+    ElMessage.error(t('copyFailed'))
+  } finally {
+    panelEl.style.maxHeight = origMaxHeight
+    panelEl.style.overflow = origOverflow
+  }
+}
 
 onMounted(() => {
   loadMessagesFromStorage()
@@ -64,6 +91,7 @@ onMounted(() => {
         :available-models="availableModels"
         :models-loading="modelsLoading"
         @clear-chat="clearChat"
+        @export-screenshot="exportScreenshot"
       />
 
       <SummaryBar :summary="summary" />
@@ -83,6 +111,7 @@ onMounted(() => {
         :loading="loading"
         :summarizing="summarizing"
         :streaming-content="streamingContent"
+        @edit="editAndResend"
       />
 
       <ChatComposer :loading="loading" @send="sendMessage" />

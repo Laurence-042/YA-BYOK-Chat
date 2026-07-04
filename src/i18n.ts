@@ -61,6 +61,12 @@ const messages = {
     alertStartTime: '开始时间',
     alertEndTime: '结束时间',
     alertTimeHint: '格式 HH:MM（24 小时制）。若开始时间晚于结束时间，则视为跨日',
+    copyMessage: '复制',
+    editMessage: '编辑',
+    editConfirm: '确认',
+    editCancel: '取消',
+    messageCopied: '已复制',
+    exportScreenshot: '导出截图',
   },
   en: {
     language: 'Language',
@@ -127,6 +133,12 @@ const messages = {
     alertStartTime: 'Start time',
     alertEndTime: 'End time',
     alertTimeHint: 'Format HH:MM (24-hour). If start is after end, the range wraps past midnight.',
+    copyMessage: 'Copy',
+    editMessage: 'Edit',
+    editConfirm: 'Confirm',
+    editCancel: 'Cancel',
+    messageCopied: 'Copied',
+    exportScreenshot: 'Export Screenshot',
   },
 }
 

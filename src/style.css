@@ -86,8 +86,55 @@ body {
   justify-content: flex-start;
 }
 
-.bubble {
+.message-content {
+  display: flex;
+  flex-direction: column;
   max-width: 78%;
+}
+
+.message.user .message-content {
+  align-items: flex-end;
+}
+
+.message.assistant .message-content {
+  align-items: flex-start;
+}
+
+.message-actions {
+  display: none;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.message:hover .message-actions {
+  display: flex;
+}
+
+.message.user .message-actions {
+  justify-content: flex-end;
+}
+
+.message-actions .el-button {
+  padding: 4px;
+  height: 24px;
+  width: 24px;
+  font-size: 12px;
+}
+
+.edit-textarea {
+  width: 340px;
+  max-width: 100%;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: 100%;
   padding: 10px 14px;
   font-size: 14px;
   line-height: 1.65;

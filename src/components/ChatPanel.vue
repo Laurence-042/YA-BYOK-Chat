@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { ElMessage } from 'element-plus'
+import { CopyDocument, Edit } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import type { ChatMessage } from '../types'
@@ -80,8 +82,44 @@ const props = defineProps<{
   streamingContent: string
 }>()
 
+const emit = defineEmits<{
+  (e: 'edit', index: number, newContent: string): void
+}>()
+
 const { t } = useI18n()
 const chatPanelRef = ref<HTMLElement | null>(null)
+
+// ── Edit state ─────────────────────────────────────────────────
+const editingIndex = ref<number | null>(null)
+const editContent = ref('')
+
+function startEdit(index: number, content: string) {
+  editingIndex.value = index
+  editContent.value = content
+}
+
+function cancelEdit() {
+  editingIndex.value = null
+  editContent.value = ''
+}
+
+function confirmEdit(index: number) {
+  const text = editContent.value.trim()
+  if (!text) return
+  emit('edit', index, text)
+  editingIndex.value = null
+  editContent.value = ''
+}
+
+// ── Copy ───────────────────────────────────────────────────────
+async function copyMessage(content: string) {
+  try {
+    await navigator.clipboard.writeText(content)
+    ElMessage.success(t('messageCopied'))
+  } catch {
+    ElMessage.error(t('copyFailed'))
+  }
+}
 
 /** Tolerance (px) for considering the user "at the bottom". */
 const BOTTOM_THRESHOLD = 24
@@ -162,8 +200,45 @@ defineExpose({ scrollToBottom })
       class="message"
       :class="item.role"
     >
-      <div v-if="item.role === 'assistant'" class="bubble md-bubble" v-html="renderMd(item.content)" />
-      <div v-else class="bubble">{{ item.content }}</div>
+      <div class="message-content">
+        <template v-if="item.role === 'user' && editingIndex === index">
+          <el-input
+            v-model="editContent"
+            type="textarea"
+            :autosize="{ minRows: 2, maxRows: 12 }"
+            class="edit-textarea"
+            @keydown.esc="cancelEdit"
+          />
+          <div class="edit-actions">
+            <el-button size="small" type="primary" @click="confirmEdit(index)">{{ t('editConfirm') }}</el-button>
+            <el-button size="small" @click="cancelEdit">{{ t('editCancel') }}</el-button>
+          </div>
+        </template>
+        <template v-else>
+          <div v-if="item.role === 'assistant'" class="bubble md-bubble" v-html="renderMd(item.content)" />
+          <div v-else class="bubble">{{ item.content }}</div>
+          <div class="message-actions">
+            <el-tooltip :content="t('copyMessage')" placement="top" :show-after="300">
+              <el-button
+                size="small"
+                :icon="CopyDocument"
+                circle
+                :disabled="props.loading"
+                @click="copyMessage(item.content)"
+              />
+            </el-tooltip>
+            <el-tooltip v-if="item.role === 'user'" :content="t('editMessage')" placement="top" :show-after="300">
+              <el-button
+                size="small"
+                :icon="Edit"
+                circle
+                :disabled="props.loading"
+                @click="startEdit(index, item.content)"
+              />
+            </el-tooltip>
+          </div>
+        </template>
+      </div>
     </div>
     <div v-if="loading && !streamingContent" class="message assistant">
       <div class="bubble typing-bubble">

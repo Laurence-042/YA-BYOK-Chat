@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { Camera } from '@element-plus/icons-vue'
 
 defineProps<{
   modelValue: string
@@ -10,6 +11,7 @@ defineProps<{
 defineEmits<{
   (e: 'update:modelValue', value: string): void
   (e: 'clearChat'): void
+  (e: 'exportScreenshot'): void
 }>()
 
 const { t } = useI18n()
@@ -30,6 +32,9 @@ const { t } = useI18n()
     >
       <el-option v-for="m in availableModels" :key="m" :label="m" :value="m" />
     </el-select>
+    <el-tooltip :content="t('exportScreenshot')" placement="top" :show-after="300">
+      <el-button size="large" :icon="Camera" @click="$emit('exportScreenshot')" />
+    </el-tooltip>
     <el-button size="large" @click="$emit('clearChat')">{{ t('clearChat') }}</el-button>
   </div>
 </template>

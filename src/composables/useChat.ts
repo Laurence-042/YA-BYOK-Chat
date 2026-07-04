@@ -360,6 +360,34 @@ export function useChat(form: ShareConfig) {
     summary.value = ''
   }
 
+  async function editAndResend(index: number, newContent: string) {
+    if (loading.value) return
+    const content = newContent.trim()
+    if (!form.endpoint || !form.apiKey || !form.model || !content) return
+    messages.value = [...messages.value.slice(0, index), { role: 'user', content }]
+    loading.value = true
+    streamingContent.value = ''
+    try {
+      const assistantContent = await streamChatCompletions(
+        messages.value,
+        'chat',
+        (delta) => {
+          streamingContent.value += delta
+        },
+      )
+      messages.value.push({ role: 'assistant', content: assistantContent })
+      streamingContent.value = ''
+      void logToWorker(content, assistantContent)
+      void maybeSummarize()
+    } catch {
+      streamingContent.value = ''
+      diagnosticsOpen.value = true
+      ElMessage.error(t('requestFailed'))
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     messages,
     summary,
@@ -369,6 +397,7 @@ export function useChat(form: ShareConfig) {
     diagnostics,
     diagnosticsOpen,
     sendMessage,
+    editAndResend,
     clearChat,
     copyDiagnostics,
     formatDiagnostics,
