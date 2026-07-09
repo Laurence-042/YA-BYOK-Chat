@@ -25,6 +25,14 @@ export function useChat(form: ShareConfig) {
   const streamingContent = ref('')
   const diagnostics = ref<Diagnostics | null>(null)
   const diagnosticsOpen = ref(false)
+  /**
+   * Active-message count (excluding folded ones) at the time of the last
+   * summarize attempt. Used to throttle re-triggering: we only attempt another
+   * summary once at least `summarizeAfter` additional messages accumulate,
+   * regardless of success/failure. Prevents the failure-loop / edge-config
+   * issue where every message triggers a summarization request.
+   */
+  const summarizeWatermark = ref(0)
 
   function saveMessages() {
     localStorage.setItem(LS_MESSAGES_KEY, JSON.stringify(messages.value))
@@ -276,6 +284,12 @@ export function useChat(form: ShareConfig) {
     const active = messages.value.filter((m) => !m.summarized)
     const threshold = clampInt(form.summarizeAfter, SUMMARIZE_AFTER_MIN, SUMMARIZE_AFTER_MAX)
     if (active.length <= threshold) return
+    // Throttle re-triggering: once we cross the threshold and attempt a summary,
+    // require `threshold` MORE active messages before attempting again. This
+    // prevents a failure-loop (failed → flags reverted → immediately over
+    // threshold again) and the edge case where retainMessages ≈ summarizeAfter
+    // (only 1 message folded per trigger, so every message re-triggers).
+    if (active.length - summarizeWatermark.value < threshold) return
     const keep = clampInt(form.retainMessages, RETAIN_MESSAGES_MIN, RETAIN_MESSAGES_MAX)
     const foldCount = active.length - keep
     if (foldCount <= 0) return
@@ -337,6 +351,11 @@ export function useChat(form: ShareConfig) {
       toFold.forEach((m) => (m.summarized = false))
     } finally {
       summarizing.value = false
+      // Record this attempt as the watermark. On success the active set is now
+      // much smaller (only retained messages), so `threshold` new messages
+      // must accumulate before we try again. On failure (flags reverted) the
+      // value still advances so we don't retry on the very next message.
+      summarizeWatermark.value = messages.value.filter((m) => !m.summarized).length
     }
   }
 
@@ -375,6 +394,7 @@ export function useChat(form: ShareConfig) {
   function clearChat() {
     messages.value = []
     summary.value = ''
+    summarizeWatermark.value = 0
   }
 
   async function editAndResend(index: number, newContent: string) {
