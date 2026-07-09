@@ -97,6 +97,11 @@ export function useChat(form: ShareConfig) {
     return parts.join('\n\n')
   }
 
+  /** Messages that are still sent to the API verbatim (not folded into summary). */
+  function activeMessages(): ChatMessage[] {
+    return messages.value.filter((m) => !m.summarized)
+  }
+
   function buildRequestBody(extraMessages: ChatMessage[]): Record<string, unknown> {
     const systemContent = buildSystemPrompt()
     const requestMessages = [
@@ -267,12 +272,15 @@ export function useChat(form: ShareConfig) {
   async function maybeSummarize() {
     if (!form.autoSummary) return
     if (summarizing.value) return
+    // Only count messages not already folded into the summary.
+    const active = messages.value.filter((m) => !m.summarized)
     const threshold = clampInt(form.summarizeAfter, SUMMARIZE_AFTER_MIN, SUMMARIZE_AFTER_MAX)
-    if (messages.value.length <= threshold) return
+    if (active.length <= threshold) return
     const keep = clampInt(form.retainMessages, RETAIN_MESSAGES_MIN, RETAIN_MESSAGES_MAX)
-    const older = messages.value.slice(0, messages.value.length - keep)
-    if (older.length === 0) return
-    const transcript = older
+    const foldCount = active.length - keep
+    if (foldCount <= 0) return
+    const toFold = active.slice(0, foldCount)
+    const transcript = toFold
       .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
       .join('\n')
     const previous = summary.value
@@ -285,6 +293,9 @@ export function useChat(form: ShareConfig) {
     const summaryMessages: ChatMessage[] = [
       { role: 'user', content: `${instruction}\n\n${previous}${transcript}` },
     ]
+    // Mark these messages as folded NOW so the UI greys them out and shows the
+    // summary divider immediately. Flags are reverted if summarization fails.
+    toFold.forEach((m) => (m.summarized = true))
     summarizing.value = true
     try {
       // Build a minimal request that does NOT include the running summary as system,
@@ -306,18 +317,24 @@ export function useChat(form: ShareConfig) {
         },
         body: JSON.stringify(body),
       })
-      if (!response.ok) return
+      if (!response.ok) {
+        toFold.forEach((m) => (m.summarized = false))
+        return
+      }
       const data = (await response.json()) as {
         choices?: Array<{ message?: { content?: unknown } }>
       }
       const content = data?.choices?.[0]?.message?.content
       if (typeof content === 'string' && content.trim()) {
         summary.value = content.trim()
-        // Drop the now-summarized older messages from history.
-        messages.value = messages.value.slice(-keep)
+        // Messages were already marked summarized above; keep them greyed out
+        // (not deleted) so the user can see exactly what was folded.
+      } else {
+        toFold.forEach((m) => (m.summarized = false))
       }
     } catch {
-      // Summarization is best-effort; silently skip on failure.
+      // Summarization is best-effort; un-fold on failure.
+      toFold.forEach((m) => (m.summarized = false))
     } finally {
       summarizing.value = false
     }
@@ -335,7 +352,7 @@ export function useChat(form: ShareConfig) {
     streamingContent.value = ''
     try {
       const assistantContent = await streamChatCompletions(
-        messages.value,
+        activeMessages(),
         'chat',
         (delta) => {
           streamingContent.value += delta
@@ -369,7 +386,7 @@ export function useChat(form: ShareConfig) {
     streamingContent.value = ''
     try {
       const assistantContent = await streamChatCompletions(
-        messages.value,
+        activeMessages(),
         'chat',
         (delta) => {
           streamingContent.value += delta

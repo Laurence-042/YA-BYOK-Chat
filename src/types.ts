@@ -1,6 +1,12 @@
 export type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
+  /**
+   * True once this message has been folded into the running summary. Such
+   * messages remain visible (greyed-out) so the user can see what the model
+   * was told to summarise, but they are NOT sent to the API anymore.
+   */
+  summarized?: boolean
 }
 
 export type ShareConfig = {

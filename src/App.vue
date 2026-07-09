@@ -4,7 +4,6 @@ import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import AppHeader from './components/AppHeader.vue'
 import ModelBar from './components/ModelBar.vue'
-import SummaryBar from './components/SummaryBar.vue'
 import ChatPanel from './components/ChatPanel.vue'
 import ChatComposer from './components/ChatComposer.vue'
 import SettingsDrawer from './components/SettingsDrawer.vue'
@@ -94,8 +93,6 @@ onMounted(() => {
         @export-screenshot="exportScreenshot"
       />
 
-      <SummaryBar :summary="summary" />
-
       <el-alert
         v-if="alertActive && form.alertMessage && !alertDismissed"
         :title="form.alertMessage"
@@ -111,6 +108,7 @@ onMounted(() => {
         :loading="loading"
         :summarizing="summarizing"
         :streaming-content="streamingContent"
+        :summary="summary"
         @edit="editAndResend"
       />
 

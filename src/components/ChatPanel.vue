@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { CopyDocument, Edit } from '@element-plus/icons-vue'
@@ -80,6 +80,7 @@ const props = defineProps<{
   loading: boolean
   summarizing: boolean
   streamingContent: string
+  summary: string
 }>()
 
 const emit = defineEmits<{
@@ -88,6 +89,21 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const chatPanelRef = ref<HTMLElement | null>(null)
+
+/** Index in `messages` where active (non-summarized) conversation begins. */
+const activeStartIndex = computed(() => {
+  const arr = props.messages
+  for (let i = 0; i < arr.length; i++) {
+    if (!arr[i].summarized) return i
+  }
+  return arr.length
+})
+
+/** Whether the summary divider card should render: when there is at least one
+ * summarized message and either a summary exists or summarization is in progress. */
+const showSummaryDivider = computed(
+  () => activeStartIndex.value > 0 && (props.summary || props.summarizing),
+)
 
 // ── Edit state ─────────────────────────────────────────────────
 const editingIndex = ref<number | null>(null)
@@ -177,7 +193,7 @@ async function renderMermaidBlocks() {
 }
 
 watch(
-  () => [props.messages, props.loading, props.summarizing, props.streamingContent] as const,
+  () => [props.messages, props.loading, props.summarizing, props.streamingContent, props.summary] as const,
   () => {
     // Only auto-follow new content when the user is already at the bottom.
     // If they have scrolled up, leave their view in place so they can read at
@@ -194,12 +210,24 @@ defineExpose({ scrollToBottom })
 <template>
   <div ref="chatPanelRef" class="chat-panel" @scroll.passive="onScroll">
     <div v-if="messages.length === 0 && !loading && !streamingContent" class="empty">{{ t('emptyChat') }}</div>
-    <div
-      v-for="(item, index) in messages"
-      :key="index"
-      class="message"
-      :class="item.role"
-    >
+    <template v-for="(item, index) in messages" :key="index">
+      <!-- Inject the centered summary divider exactly at the boundary between
+           folded (summarized) and active messages. -->
+      <div v-if="showSummaryDivider && index === activeStartIndex" class="summary-divider">
+        <div class="summary-bubble">
+          <div class="summary-bubble-label">{{ t('summaryBubbleLabel') }}</div>
+          <div v-if="summarizing && !summary" class="summary-bubble-loading">
+            <span class="typing-dots"><i></i><i></i><i></i></span>
+            <span>{{ t('summarizingBubble') }}</span>
+          </div>
+          <div v-else class="summary-bubble-content md-bubble" v-html="renderMd(summary)" />
+          <div v-if="summarizing && summary" class="summary-bubble-updating">{{ t('summaryBubbleUpdating') }}</div>
+        </div>
+      </div>
+      <div
+        class="message"
+        :class="[item.role, { summarized: item.summarized }]"
+      >
       <div class="message-content">
         <template v-if="item.role === 'user' && editingIndex === index">
           <el-input
@@ -227,7 +255,7 @@ defineExpose({ scrollToBottom })
                 @click="copyMessage(item.content)"
               />
             </el-tooltip>
-            <el-tooltip v-if="item.role === 'user'" :content="t('editMessage')" placement="top" :show-after="300">
+            <el-tooltip v-if="item.role === 'user' && !item.summarized" :content="t('editMessage')" placement="top" :show-after="300">
               <el-button
                 size="small"
                 :icon="Edit"
@@ -240,6 +268,7 @@ defineExpose({ scrollToBottom })
         </template>
       </div>
     </div>
+    </template>
     <div v-if="loading && !streamingContent" class="message assistant">
       <div class="bubble typing-bubble">
         <span class="typing-dots"><i></i><i></i><i></i></span>
