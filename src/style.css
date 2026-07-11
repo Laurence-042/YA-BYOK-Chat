@@ -101,13 +101,15 @@ body {
 }
 
 .message-actions {
-  display: none;
+  display: flex;
+  visibility: hidden;
   gap: 4px;
   margin-top: 4px;
 }
 
-.message:hover .message-actions {
-  display: flex;
+.message:hover .message-actions,
+.message:focus-within .message-actions {
+  visibility: visible;
 }
 
 .message.user .message-actions {
