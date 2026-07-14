@@ -70,6 +70,11 @@ const messages = {
     editCancel: '取消',
     messageCopied: '已复制',
     exportScreenshot: '导出截图',
+    dropFileHint: '松开以将文件内容填入输入框',
+    dropFileUnsupported: '不支持的文件类型',
+    dropFileTooLarge: '文件过大（最大 1 MB）',
+    dropFileEmpty: '文件内容为空',
+    dropFileReadError: '文件读取失败',
   },
   en: {
     language: 'Language',
@@ -145,6 +150,11 @@ const messages = {
     editCancel: 'Cancel',
     messageCopied: 'Copied',
     exportScreenshot: 'Export Screenshot',
+    dropFileHint: 'Drop to fill the input with file content',
+    dropFileUnsupported: 'Unsupported file type',
+    dropFileTooLarge: 'File too large (max 1 MB)',
+    dropFileEmpty: 'File is empty',
+    dropFileReadError: 'Failed to read file',
   },
 }
 

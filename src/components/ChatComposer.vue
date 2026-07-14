@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { UploadFilled } from '@element-plus/icons-vue'
+import { useDropFile } from '../composables/useDropFile'
 
 const props = defineProps<{
   loading: boolean
@@ -14,6 +16,12 @@ const { t } = useI18n()
 
 const draftMessage = ref('')
 const isComposing = ref(false)
+
+function onFileDrop(text: string, _fileName: string) {
+  draftMessage.value = text
+}
+
+const { isDragging } = useDropFile(onFileDrop)
 
 function send() {
   if (props.loading) return
@@ -33,6 +41,14 @@ function onComposerKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
+  <Teleport to="body">
+    <div v-if="isDragging" class="drop-overlay">
+      <div class="drop-overlay-content">
+        <el-icon :size="32" color="#94a3b8"><UploadFilled /></el-icon>
+        <p>{{ t('dropFileHint') }}</p>
+      </div>
+    </div>
+  </Teleport>
   <div class="composer">
     <el-input
       v-model="draftMessage"
